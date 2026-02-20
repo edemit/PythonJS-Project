@@ -1,0 +1,8 @@
+lib: [
+  "_build/install/default/lib/PythonToJS/META"
+  "_build/install/default/lib/PythonToJS/dune-package"
+  "_build/install/default/lib/PythonToJS/opam"
+]
+bin: [
+  "_build/install/default/bin/PythonToJS"
+]
