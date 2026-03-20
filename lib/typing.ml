@@ -24,7 +24,13 @@ type environment = {
     }
   [@@deriving show]
 
+let tp_expr (env : environment) (e : expr) = 
+  match e with
+  | Const c -> UnionT[IntT]
+  | _ -> UnionT[InT]
 
+
+(*modifier la fonction pour vérifier les types plutôt que juste renvoyer true*)
 let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s = true
 let tp_fundefn init_env (Fundefn(Fundecl(fn, pards, rt), vds, s)) = true
 
