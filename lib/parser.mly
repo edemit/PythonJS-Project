@@ -1,13 +1,13 @@
 %{
 open Lang
 
-(* Names such as int can be type names but also by function names (cast to int). 
-   Therefore, the lexer cannot identify them as type names. 
+(* Names such as int can be type names but also by function names (cast to int).
+   Therefore, the lexer cannot identify them as type names.
  *)
 let id_to_tp = function
    | "bool"   -> BoolT
    | "int"    -> IntT
-   | "float"  -> FloatT   
+   | "float"  -> FloatT
    | "None"   -> NoneT
    | "str"    -> StringT
    | t -> failwith ("invalid type name " ^ t)
@@ -27,9 +27,9 @@ let sep_left_right lrs =
 %token <int> INTCONSTANT
 %token <string> STRINGCONSTANT
 %token PLUS MINUS TIMES DIV MOD
-%token LPAREN RPAREN 
+%token LPAREN RPAREN
 %token EQ COMMA COLON VBAR
-%token DEF IF ELSE WHILE RETURN BCEQ BCGE BCGT BCLE BCLT BCNE BLAND BLOR
+%token DEF IF ELSE WHILE RETURN IN BCEQ BCGE BCGT BCLE BCLT BCNE BLAND BLOR
 %token ARROW
 %token BEGIN END
 
@@ -44,11 +44,11 @@ main: p = prog; EOF { p }
 ;
 
 /* TODO: add function definitions */
-prog: svs = list(statement_or_vardecl) 
+prog: svs = list(statement_or_vardecl)
      { let (vds, ss) = sep_left_right svs in Prog([], vds, Block ss) }
 ;
 
-statement_or_vardecl : 
+statement_or_vardecl :
 |  s = vardecl   { Either.Left s }
 |  s = statement { Either.Right s}
 ;
@@ -68,8 +68,7 @@ primary:
 | a =atom { a }
 ;
 
-  
-atom: 
+atom:
   v = IDENTIFIER      { VarE(v) }
 | bc = BCONSTANT      { Const(BoolV bc) }
 | fc = FLOATCONSTANT  { Const(FloatV fc) }
@@ -78,7 +77,7 @@ atom:
 | LPAREN e = expression RPAREN
     { e }
 ;
-  
+
 expression:
     primary
     { $1 }
@@ -86,17 +85,58 @@ expression:
 ;
 
 
+
 /* *******  STATEMENTS  ******* */
 
 /* TODO: Most statement need to be defined */
-statement: 
-| s = simple_stmt { s }
+statement:
+  | s = simple_stmt { s }
+  | c = compound_stmt { c }
 
+compound_stmt:
+  | fu = function_def {fu }
+  | w = while_stmt { w }
+  | f = for_stmt { f }
+  | BEGIN s = list(statement) END { Block (s) }
+  | ie = if_else_stmt { ie }
 
+while_stmt: WHILE e = expression COLON  s = statement {While(e,s)}
+
+for_stmt: FOR i IN expression COLON s = statement {While(i, s)}
+
+/* pas sur pour le for*/
+for_stmt:
+  | FOR star_targets IN star_expressions COLON opt_type_comment block opt_else_block { For($2, $4, $7, $8) }
+
+  | ASYNC FOR star_targets IN star_expressions COLON opt_type_comment block opt_else_block { AsyncFor($3, $5, $8, $9) }
+
+opt_type_comment:
+  |              { None }
+  | TYPE_COMMENT { Some $1 }
+
+opt_else_block:
+  |            { None }
+  | else_block { Some $1 }
+
+if_else_stmt:
+  | IF e = expression COLON s1 = statement elif_block 
+      { Cond(e, s1, Block[]) }
+
+  | IF e = expression COLON s1 = statement ELSE COLON s2 = statement 
+      { Cond(e, s1, s2) }
+
+elif_block: /* block elif, car les elif ont structure récursive en Python*/
+  | ELIF e = expression COLON s1 = statement elif_block
+      { Elif(e, s1, Block[]) }
+
+  | ELIF e = expression COLON s1 = statement ELSE COLON s2 = statement
+      { Elif(e, s1, s2) }
+
+  | /* vide */ { [] }
+
+  
 /* TODO: also consider return and call */
 simple_stmt:
-    s = assignment { s }
-;
+    s = assignment { s };
 
-assignment: vn = IDENTIFIER; EQ; e = expression  { Assign(vn, e) }
-;
+assignment: vn = IDENTIFIER; EQ; e = expression  { Assign(vn, e) };

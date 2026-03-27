@@ -27,7 +27,7 @@ type environment = {
 let tp_expr (env : environment) (e : expr) = 
   match e with
   | Const c -> UnionT[IntT]
-  | _ -> UnionT[InT]
+  | _ -> UnionT[IntT]
 
 
 (*modifier la fonction pour vérifier les types plutôt que juste renvoyer true*)

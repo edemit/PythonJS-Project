@@ -74,6 +74,7 @@ type stmt =
     Block of stmt list
   | Assign of vname * expr                   (* Variable assignment: x = e *)
   | Cond of expr * stmt * stmt               (* if .. then .. else *)
+  | Elif of expr * stmt * stmt               (* if .. then .. else *)
   | While of expr * stmt                  
   | Return of  expr
   | CallS of vname * (expr list)             (* procedure call *)
