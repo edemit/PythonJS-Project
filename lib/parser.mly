@@ -100,24 +100,47 @@ compound_stmt:
   | BEGIN s = list(statement) END { Block (s) }
   | ie = if_else_stmt { ie }
 
-while_stmt: WHILE e = expression COLON  s = statement {While(e,s)}
+//auxilaires
+opt_type_params:
+  | type_params { Some $1 }
+  |             { None }
 
-for_stmt: FOR i IN expression COLON s = statement {While(i, s)}
+opt_params:
+  | params { Some $1 }
+  |        { None }
 
-/* pas sur pour le for*/
-for_stmt:
-  | FOR star_targets IN star_expressions COLON opt_type_comment block opt_else_block { For($2, $4, $7, $8) }
-
-  | ASYNC FOR star_targets IN star_expressions COLON opt_type_comment block opt_else_block { AsyncFor($3, $5, $8, $9) }
+opt_return:
+  | ARROW expression { Some $2 }
+  |                  { None }
 
 opt_type_comment:
   |              { None }
   | TYPE_COMMENT { Some $1 }
 
-opt_else_block:
+opt_else:
   |            { None }
   | else_block { Some $1 }
 
+//fonction
+function_def:
+  | decorators function_def_raw {}
+  | function_def_raw            {}
+
+function_def_raw:
+  | DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment block {}
+  | ASYNC DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment block {}
+
+//while
+while_stmt: WHILE e = expression COLON  s = statement {While(e,s)}
+
+//for
+/* pas sur pour le for*/
+for_stmt:
+  | FOR star_targets IN star_expressions COLON opt_type_comment block opt_else { For($2, $4, $7, $8) }
+
+  | ASYNC FOR star_targets IN star_expressions COLON opt_type_comment block opt_else { AsyncFor($3, $5, $8, $9) }
+
+//if-else
 if_else_stmt:
   | IF e = expression COLON s1 = statement elif_block 
       { Cond(e, s1, Block[]) }
