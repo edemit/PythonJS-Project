@@ -28,8 +28,8 @@ let sep_left_right lrs =
 %token <string> STRINGCONSTANT
 %token PLUS MINUS TIMES DIV MOD
 %token LPAREN RPAREN
-%token EQ COMMA COLON VBAR
-%token DEF IF ELSE WHILE RETURN IN BCEQ BCGE BCGT BCLE BCLT BCNE BLAND BLOR
+%token EQ COMMA COLON VBAR COMMENT
+%token DEF IF ELIF ELSE FOR WHILE RETURN IN NAME ASYNC BCEQ BCGE BCGT BCLE BCLT BCNE BLAND BLOR
 %token ARROW
 %token BEGIN END
 
@@ -115,18 +115,10 @@ opt_return:
 
 opt_type_comment:
   |              { None }
-  | TYPE_COMMENT { Some $1 }
-
-opt_else:
-  |            { None }
-  | else_block { Some $1 }
-
+  | COMMENT { Some $1 }
+  
 //fonction
 function_def:
-  | decorators function_def_raw {}
-  | function_def_raw            {}
-
-function_def_raw:
   | DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment block {}
   | ASYNC DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment block {}
 

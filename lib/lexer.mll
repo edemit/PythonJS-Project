@@ -55,6 +55,7 @@ rule token = parse
 | ','  { COMMA }
 | ':'  { COLON }
 | '|'  { VBAR }
+| '#'  { COMMENT }
 
 | "True"       {BCONSTANT true}
 | "False"      {BCONSTANT false}
@@ -62,9 +63,12 @@ rule token = parse
 | "if"         {IF}
 | "elif"       {ELIF}
 | "else"       {ELSE}
+| "for"        {FOR}
 | "while"      {WHILE}
 | "return"     {RETURN}
 | "in"         {IN}
+| "name"       {NAME}
+| "async"      {ASYNC}
 
 | "=="         {BCEQ}
 | ">="         {BCGE}
