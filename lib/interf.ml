@@ -1,6 +1,3 @@
-(* Interface functionality with the parser, contains the essential 
-   functions for bin/main.ml
-*)
 
 
 exception ParseLexError of exn * (int * int * string * string)
