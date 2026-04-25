@@ -61,11 +61,14 @@ rule token = parse
 | "False"      {BCONSTANT false}
 | "def"        {DEF}
 | "if"         {IF}
+| "elif"       {ELIF}
 | "else"       {ELSE}
+| "for"        {FOR}
 | "while"      {WHILE}
 | "return"     {RETURN}
 | "in"         {IN}
 | "name"       {NAME}
+| "async"      {ASYNC}
 
 | "=="         {BCEQ}
 | ">="         {BCGE}
