@@ -155,14 +155,18 @@ block : BEGIN b = list(statement) END { Block (b) }
 
 //def (version minimaliste) /* ! Appelée dans prog, pas dans simple_stmt ou compound_stmt ! */
 function_def:
-  DEF f = IDENTIFIER LPAREN RPAREN COLON b = block
-    {
-      let fundecl = Fundecl(f, [], mk_norm_tp [NoneT]) in
-        Fundefn(fundecl, [], b)
-    };
+  | DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment Block {}
+  | ASYNC DEF NAME opt_type_params LPAREN opt_params RPAREN opt_return COLON opt_type_comment Block {}
 
 //while
 while_stmt: WHILE e = expression COLON  s = statement {While(e,s)}
+
+//for
+/* pas sur pour le for*/
+for_stmt:
+  | FOR star_targets IN star_expressions COLON opt_type_comment block opt_else { For($2, $4, $7, $8) }
+
+  | ASYNC FOR star_targets IN star_expressions COLON opt_type_comment block opt_else { AsyncFor($3, $5, $8, $9) }
 
 //if-else
 if_stmt:

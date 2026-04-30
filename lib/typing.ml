@@ -46,6 +46,8 @@ let tp_var (env : var_environment )(v :string) =
         )
     | t -> t
 let tp_Operation (env : var_environment )(e1, op, e2) = 
+  (*calcul le type des operations / je pourrais techniquement réutiliser la fonction 
+  tp_expr mais conflit dans l'ordre d'instantiation*)
     let t1 = match e1 with
       | Const c -> tp_const (c)
       | VarE v ->  tp_var (env)(v)
@@ -56,6 +58,7 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
       | VarE v ->  tp_var (env)(v)
       | _ -> UnionT[IntT]
     in
+    (*je match les deux expressions pour voir si elles sont compatibles *)
     (match op with 
       | BArith _ ->(*si l'opérateur est plus min... les operations arithmétiques *)
           (match (t1, t2) with 
@@ -67,7 +70,7 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
           )
       | BBool _-> (* and et or *)
           if t1 = t2 then UnionT[BoolT] else failwith "Operation entre deux types non booléens"
-      | BCompar _->
+      | BCompar _->(*les comparaisons entre ints/floats*)
           (match (t1, t2) with 
             | (UnionT[IntT], UnionT[IntT]) -> UnionT[BoolT]
             | (UnionT[FloatT], UnionT[FloatT]) -> UnionT[BoolT]
@@ -75,16 +78,22 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
             | (UnionT[FloatT], UnionT[IntT]) -> UnionT[BoolT]
             | _ -> failwith "Type error: incompatible types for comparison operator"
           )
-    )  
-(*dune exec PythonToJS f test/test.py*)
+    )
+
+(*
+pour tester :
+dune build
+dune exec PythonToJS f test/test.py
+*)
 let tp_expr (env : environment) (e : expr) : tp = 
   match e with
     | Const c -> tp_const (c)
     | VarE v ->  tp_var (env.dyn_vars)(v)
     | BinOp (op, e1, e2) -> tp_Operation (env.dyn_vars)(e1, op, e2)
+    (*TODO callE*)
     | _ -> UnionT[IntT]
 
-
+(*verifie le typage ligne par ligne*)
 let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s = 
   match s with
     | Block stmts ->
@@ -96,7 +105,6 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
 
     | Assign (v, e) ->
         let t_expr = tp_expr env e in
-        Printf.printf "Type : %s\n" (Lang.show_tp t_expr);
         let new_env = {
           env with
           dyn_vars = {
