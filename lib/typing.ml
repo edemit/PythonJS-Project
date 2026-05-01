@@ -32,19 +32,11 @@ let tp_const = function
     | StringV _ -> UnionT[StringT]
 
 let tp_var (env : var_environment )(v :string) =
-  let rec parcourEnv (vL  : (vname * tp) list ) = 
-  match vL with 
-    |(vname, tp)::reste -> if vname = v then tp else parcourEnv reste 
-    |[] -> UnionT[NoneT]
-  in
-
-  match (parcourEnv env.locals) with (*je cherche dans local et je verif que la variable est bien déclarée *)
-    | UnionT[NoneT] ->   
-        (match parcourEnv env.globals with 
-          | UnionT[NoneT] -> UnionT[NoneT]
-          | t -> t
-        )
-    | t -> t
+  try List.assoc v env.locals
+  with Not_found ->
+    try List.assoc v env.globals
+    with Not_found ->
+      failwith ("la variable n'est pas déclarée : " ^ v)
 let tp_Operation (env : var_environment )(e1, op, e2) = 
     let t1 = match e1 with
       | Const c -> tp_const (c)
@@ -76,15 +68,45 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
             | _ -> failwith "Type error: incompatible types for comparison operator"
           )
     )  
+
+
 (*dune exec PythonToJS f test/test.py*)
-let tp_expr (env : environment) (e : expr) : tp = 
+let rec tp_expr (env : environment) (e : expr) : tp = 
   match e with
     | Const c -> tp_const (c)
     | VarE v ->  tp_var (env.dyn_vars)(v)
     | BinOp (op, e1, e2) -> tp_Operation (env.dyn_vars)(e1, op, e2)
-    | _ -> UnionT[IntT]
+    | CallE (f_name, arguments) -> tp_CallE env f_name arguments
 
 
+and tp_CallE (env : environment) f_name arguments =
+  let arguments_types = List.map (tp_expr env) arguments in
+  (try 
+    (*check fonction existe/reccupère les types des paramètres et le paramètre de retour*)
+    let (param_types, ret_type) = List.assoc f_name env.fdecls in(*si l'assiociation ne marche pas la fonction n'existe pas*)
+    (*check si le nombre de paramètres est correct*)
+    if List.length param_types = List.length arguments_types then(*si le nombre de paramètres est correct*)
+      
+      let rec comparaison_types param_types arguments_types =
+        match (param_types, arguments_types) with
+        | ([], []) -> true
+        | (p1 :: param_t, p2 :: args_t) ->
+            if p1 = p2 then
+              comparaison_types param_t args_t
+            else begin
+              Printf.printf "type attendu: %s\n" (Lang.show_tp p1);
+              Printf.printf "type reçu: %s\n" (Lang.show_tp p2);
+              false
+            end
+        | _ -> false 
+      in 
+      if comparaison_types param_types arguments_types then ret_type
+      else failwith ("Les arguments de la fonction " ^ f_name ^ " ne correspondent pas aux types attendus")
+      
+    else failwith ("nombre incorrect d'arguments pour la fonction " ^ f_name)
+  with Not_found ->
+    failwith ("Fonction non déclarée: " ^ f_name))
+      
 let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s = 
   match s with
     | Block stmts ->
@@ -121,7 +143,7 @@ let library_fds = [
 (* The following has to be defined in detail *)
 let tp_prog (Prog(fdefns, vds, s)) = 
   let fds = [] in
-  let globs = [("x", UnionT[IntT; StringT])] in
+  let globs = [("x", UnionT[StringT])] in
   let init_venv = { globals = globs; locals = [] } in 
   let init_env = 
     { fdecls = fds @ library_fds; static_vars = init_venv; dyn_vars = init_venv; curfun = None } in
