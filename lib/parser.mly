@@ -59,8 +59,23 @@ tpexpr_base:
   i = IDENTIFIER { id_to_tp i }
 ;
 
-/* TODO: add complex type expressions, as in: x : int | str */
-vardecl: i = IDENTIFIER; COLON; t= tpexpr_base { Vardecl(i, mk_norm_tp [t]) }
+/* complex type expressions, as in: x : int | str */
+tpexpr:
+  ts = separated_nonempty_list(VBAR, tpexpr_base) { mk_norm_tp ts }
+;
+
+vardecl: i = IDENTIFIER; COLON; t = tpexpr { Vardecl(i, t) }
+;
+
+params:
+  pars = separated_list(COMMA, vardecl) { pars }
+;
+
+fundecl:
+  DEF i = IDENTIFIER LPAREN pars = params RPAREN ARROW t = tpexpr
+    { Fundecl(i, pars, t) }
+| DEF i = IDENTIFIER LPAREN pars = params RPAREN
+    { Fundecl(i, pars, mk_norm_tp [NoneT]) }
 ;
 
 /* *******  EXPRESSIONS  ******* */
@@ -70,7 +85,8 @@ primary:
 ;
 
 atom:
-  v = IDENTIFIER      { VarE(v) }
+  i = IDENTIFIER LPAREN a = args RPAREN { CallE(i, a) }
+| v = IDENTIFIER      { VarE(v) }
 | bc = BCONSTANT      { Const(BoolV bc) }
 | fc = FLOATCONSTANT  { Const(FloatV fc) }
 | ic = INTCONSTANT    { Const(IntV ic) }
@@ -96,6 +112,7 @@ and_expr:
 cmp_expr:
   e1 = arith_expr { e1 }
 | e1 = cmp_expr BCEQ  e2 = arith_expr { BinOp(BCompar BCeq, e1, e2) }
+| e1 = cmp_expr BCNE  e2 = arith_expr { BinOp(BCompar BCne, e1, e2) }
 | e1 = cmp_expr BCLT  e2 = arith_expr { BinOp(BCompar BClt, e1, e2) }
 | e1 = cmp_expr BCLE  e2 = arith_expr { BinOp(BCompar BCle, e1, e2) }
 | e1 = cmp_expr BCGT  e2 = arith_expr { BinOp(BCompar BCgt, e1, e2) }
@@ -134,9 +151,7 @@ simple_stmt:
 assignment: vn = IDENTIFIER; EQ; e = expression  { Assign(vn, e) };
 
 args:
-                                      { [] } (* aucun argument *)
-| e = expression                      { [e] }
-| e = expression; COMMA; es = args    { e :: es }
+  a = separated_list(COMMA, expression) { a }
 
 call_stmt:
   f = IDENTIFIER LPAREN a = args RPAREN { CallS(f, a) };
@@ -153,13 +168,18 @@ compound_stmt:
 
 block : BEGIN b = list(statement) END { Block (b) }
 
-//def (version minimaliste) /* ! Appelée dans prog, pas dans simple_stmt ou compound_stmt ! */
+function_body:
+  BEGIN svs = list(statement_or_vardecl) END
+    { let (vds, ss) = sep_left_right svs in (vds, Block ss) }
+;
+
 function_def:
-  DEF f = IDENTIFIER LPAREN RPAREN COLON b = block
+  fd = fundecl COLON fb = function_body
     {
-      let fundecl = Fundecl(f, [], mk_norm_tp [NoneT]) in
-        Fundefn(fundecl, [], b)
-    };
+      let (vds, body_stmt) = fb in
+      Fundefn(fd, vds, body_stmt)
+    }
+;
 
 //while
 while_stmt: WHILE e = expression COLON  s = statement {While(e,s)}

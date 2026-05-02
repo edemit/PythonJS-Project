@@ -1,0 +1,20 @@
+﻿<!DOCTYPE html>
+<html>
+<body>
+<h1>PythonToJS</h1>
+<script>
+function is_even(n) {
+    zero = 0;
+        return n == zero || is_odd(n - 1);
+    }
+    function is_odd(n) {
+    return n != 0 && is_even(n - 1);
+    }
+</script>
+<label for="x">Enter value x: </label>
+<input type="number" id="x"><br><br>
+<label>Is the result even? </label> <label id="demo"></label>
+<p></p>
+<button onclick="document.getElementById('demo').innerHTML = is_even(document.getElementById('x').value)">Compute</button>
+</body>
+</html>

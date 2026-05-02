@@ -37,17 +37,18 @@ let tp_var (env : var_environment )(v :string) =
     try List.assoc v env.globals
     with Not_found ->
       failwith ("la variable n'est pas déclarée : " ^ v)
-let tp_Operation (env : var_environment )(e1, op, e2) = 
-    let t1 = match e1 with
-      | Const c -> tp_const (c)
-      | VarE v ->  tp_var (env)(v)
-      | _ -> UnionT[IntT]
-    in
-    let t2 = match e2 with
-      | Const c -> tp_const (c)
-      | VarE v ->  tp_var (env)(v)
-      | _ -> UnionT[IntT]
-    in
+(*dune exec PythonToJS f test/test.py*)
+let rec tp_expr (env : environment) (e : expr) : tp = 
+  match e with
+    | Const c -> tp_const (c)
+    | VarE v ->  tp_var (env.dyn_vars)(v)
+    | BinOp (op, e1, e2) -> tp_Operation env (e1, op, e2)
+    | CallE (f_name, arguments) -> tp_CallE env f_name arguments
+
+
+and tp_Operation (env : environment) (e1, op, e2) = 
+    let t1 = tp_expr env e1 in
+    let t2 = tp_expr env e2 in
     (match op with 
       | BArith _ ->(*si l'opérateur est plus min... les operations arithmétiques *)
           (match (t1, t2) with 
@@ -55,6 +56,7 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
             | (UnionT[FloatT], UnionT[FloatT]) -> UnionT[FloatT]
             | (UnionT[IntT], UnionT[FloatT]) -> UnionT[FloatT]
             | (UnionT[FloatT], UnionT[IntT]) -> UnionT[FloatT]
+            | (UnionT[StringT], UnionT[StringT]) -> UnionT[StringT]
             | _ -> failwith "calcul entre deux types incompatibles"
           )
       | BBool _-> (* and et or *)
@@ -67,20 +69,15 @@ let tp_Operation (env : var_environment )(e1, op, e2) =
             | (UnionT[FloatT], UnionT[IntT]) -> UnionT[BoolT]
             | _ -> failwith "Type error: incompatible types for comparison operator"
           )
-    )  
-
-
-(*dune exec PythonToJS f test/test.py*)
-let rec tp_expr (env : environment) (e : expr) : tp = 
-  match e with
-    | Const c -> tp_const (c)
-    | VarE v ->  tp_var (env.dyn_vars)(v)
-    | BinOp (op, e1, e2) -> tp_Operation (env.dyn_vars)(e1, op, e2)
-    | CallE (f_name, arguments) -> tp_CallE env f_name arguments
+    )
 
 
 and tp_CallE (env : environment) f_name arguments =
   let arguments_types = List.map (tp_expr env) arguments in
+  let compatible_tp expected got =
+    match (expected, got) with
+    | (UnionT exp_ts, UnionT got_ts) -> List.for_all (fun t -> List.mem t exp_ts) got_ts
+  in
   (try 
     (*check fonction existe/reccupère les types des paramètres et le paramètre de retour*)
     let (param_types, ret_type) = List.assoc f_name env.fdecls in(*si l'assiociation ne marche pas la fonction n'existe pas*)
@@ -91,7 +88,7 @@ and tp_CallE (env : environment) f_name arguments =
         match (param_types, arguments_types) with
         | ([], []) -> true
         | (p1 :: param_t, p2 :: args_t) ->
-            if p1 = p2 then
+            if compatible_tp p1 p2 then
               comparaison_types param_t args_t
             else begin
               Printf.printf "type attendu: %s\n" (Lang.show_tp p1);
@@ -118,7 +115,6 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
 
     | Assign (v, e) ->
         let t_expr = tp_expr env e in
-        Printf.printf "Type : %s\n" (Lang.show_tp t_expr);
         let new_env = {
           env with
           dyn_vars = {
@@ -127,7 +123,24 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
           }
         } in
         (new_env, t, returned)
-    |_ -> failwith "erreur"
+  | CallS (f_name, arguments) ->
+    let _ = tp_CallE env f_name arguments in
+    (env, t, returned)
+
+  | Return e ->
+    let t_expr = tp_expr env e in
+    (env, t_expr, true)
+
+  | Cond (cond_expr, then_stmt, else_stmt) ->
+    let _ = tp_expr env cond_expr in
+    let (_env_then, _t_then, returned_then) = tp_stmt (env, t, returned) then_stmt in
+    let (_env_else, _t_else, returned_else) = tp_stmt (env, t, returned) else_stmt in
+    (env, t, returned || (returned_then && returned_else))
+
+  | While (cond_expr, body_stmt) ->
+    let _ = tp_expr env cond_expr in
+    let (_env_body, _t_body, _returned_body) = tp_stmt (env, t, returned) body_stmt in
+    (env, t, returned)
 ;;
 
 let tp_fundefn init_env (Fundefn(Fundecl(fn, pards, rt), vds, s)) = true
@@ -142,8 +155,13 @@ let library_fds = [
 
 (* The following has to be defined in detail *)
 let tp_prog (Prog(fdefns, vds, s)) = 
-  let fds = [] in
-  let globs = [("x", UnionT[StringT])] in
+  let fds =
+    List.map
+      (fun (Fundefn (Fundecl (fn, pars, rt), _lvds, _body)) ->
+        (fn, (List.map tp_of_vardecl pars, rt)))
+      fdefns
+  in
+  let globs = List.map (fun vd -> (name_of_vardecl vd, tp_of_vardecl vd)) vds in
   let init_venv = { globals = globs; locals = [] } in 
   let init_env = 
     { fdecls = fds @ library_fds; static_vars = init_venv; dyn_vars = init_venv; curfun = None } in

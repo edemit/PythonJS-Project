@@ -61,7 +61,6 @@ let run_interactive () =
 
 let run_file fn = 
   let p = run_parser_error_reporting (Some fn) in
-  Printf.printf "Programme source: %s\n" (Lang.show_prog p);
   let _ = Typing.tp_prog p in 
    Pprinter.print_prog p
 
