@@ -69,7 +69,21 @@ and tp_Operation (env : environment) (e1, op, e2) =
             | (UnionT[FloatT], UnionT[IntT]) -> UnionT[BoolT]
             | _ -> failwith "Type error: incompatible types for comparison operator"
           )
+<<<<<<< HEAD
     )
+=======
+    )  
+  
+
+(*dune exec PythonToJS f test/test.py*)
+(*effectue les vérifications de type*)
+let rec tp_expr (env : environment) (e : expr) : tp = 
+  match e with
+    | Const c -> tp_const (c)
+    | VarE v ->  tp_var (env.dyn_vars)(v)
+    | BinOp (op, e1, e2) -> tp_Operation (env.dyn_vars)(e1, op, e2)
+    | CallE (f_name, arguments) -> tp_CallE env f_name arguments
+>>>>>>> 08b41b5 (readMe Alexis)
 
 
 and tp_CallE (env : environment) f_name arguments =
@@ -103,7 +117,45 @@ and tp_CallE (env : environment) f_name arguments =
     else failwith ("nombre incorrect d'arguments pour la fonction " ^ f_name)
   with Not_found ->
     failwith ("Fonction non déclarée: " ^ f_name))
-      
+
+
+  (*ajoute trie et supprime les doublons*)  
+  let tp_union (UnionT a) (UnionT b) = 
+    let c = a @ b in
+    let c_trier = List.sort compare c in
+    let rec sans_doublons = function
+      | [] -> []
+      | [x] -> [x]
+      | x :: y :: reste ->
+          if x = y then sans_doublons (y :: reste)
+          else x :: sans_doublons (y :: reste)
+    in
+    match sans_doublons c_trier with
+    | [] -> failwith "erreur"
+    | c2 -> UnionT c2
+
+  let tp_merge_dyn env env1 env2 =
+    let rec merge a b =
+      match a with
+      | [] -> []
+      | (v, t1) :: reste ->
+          let t2 =
+            try List.assoc v b
+            with Not_found -> t1
+          in
+          (v, tp_union t1 t2) :: merge reste b
+    in
+    let new_dyn_vars = {(*fusionne env1 et env2, union des types*)
+      globals = merge env1.dyn_vars.globals env2.dyn_vars.globals;
+      locals  = merge env1.dyn_vars.locals  env2.dyn_vars.locals;
+    } in
+    {
+      fdecls = env.fdecls;
+      static_vars = env.static_vars;
+      dyn_vars = new_dyn_vars;
+      curfun = env.curfun;
+    }
+
 let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s = 
   match s with
     | Block stmts ->
@@ -123,24 +175,34 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
           }
         } in
         (new_env, t, returned)
-  | CallS (f_name, arguments) ->
-    let _ = tp_CallE env f_name arguments in
-    (env, t, returned)
 
-  | Return e ->
-    let t_expr = tp_expr env e in
-    (env, t_expr, true)
+    | Cond (e, a, b) ->
+        let c = tp_expr env e in
+        let (env1, tp1, b1) = tp_stmt (env, t, false) a in
+        let (env2, tp2, b2) = tp_stmt (env, t, false) b in
+        let new_env = tp_merge_dyn env env1 env2 in
+        (new_env, tp_union tp1 tp2, b1 && b2)
 
-  | Cond (cond_expr, then_stmt, else_stmt) ->
-    let _ = tp_expr env cond_expr in
-    let (_env_then, _t_then, returned_then) = tp_stmt (env, t, returned) then_stmt in
-    let (_env_else, _t_else, returned_else) = tp_stmt (env, t, returned) else_stmt in
-    (env, t, returned || (returned_then && returned_else))
+    | While (e, stm) ->
+        let a = tp_expr env e in
+        let rec fixpoint env_cur =
+          let (env_after, _, _) = tp_stmt (env_cur, t, false) stm in
+          let new_env = tp_merge_dyn env env_cur env_after in
+          if new_env.dyn_vars = env_cur.dyn_vars then env_after
+          else fixpoint new_env
+        in
+        let env_final = fixpoint env in
+        (env_final, t, false)
 
-  | While (cond_expr, body_stmt) ->
-    let _ = tp_expr env cond_expr in
-    let (_env_body, _t_body, _returned_body) = tp_stmt (env, t, returned) body_stmt in
-    (env, t, returned)
+    | Return e ->(* retourne le type du retour*)
+        let r = tp_expr env e in
+        (env, tp_union t r, true)
+
+    | CallS (f_name, arguments) ->
+        let _ = tp_CallE env f_name arguments in
+        (env, t, returned)    
+
+    |_ -> failwith "erreur"
 ;;
 
 let tp_fundefn init_env (Fundefn(Fundecl(fn, pards, rt), vds, s)) = true
