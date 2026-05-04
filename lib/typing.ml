@@ -177,7 +177,11 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
         (new_env, t, returned)
 
     | Cond (e, a, b) ->
-        let c = tp_expr env e in
+        let t_cond = tp_expr env e in
+        (match t_cond with
+        | UnionT [BoolT] -> ()
+        | _ -> failwith "la condition du if doit être de type bool");
+
         let (env1, tp1, b1) = tp_stmt (env, t, false) a in
         let (env2, tp2, b2) = tp_stmt (env, t, false) b in
         let new_env = tp_merge_dyn env env1 env2 in
