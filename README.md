@@ -24,3 +24,12 @@ et l'environnement est mit a jour à chaque assignation,
         j'ai reçu aussi de l'aide pour la fonction tp_stmt du groupe chris/angel qui ont mieux compris le sujet que moi notamment sur le fixpoint du While que je n'arrivais pas realiser et sur le Block 
 
         je n'ai pas eu le temps de faire tp_fundefn 
+
+Etape 3:
+    Parser : ajout de fonctions avec les types : return type, union types, appels dans les expressions, != et variables locales
+
+    Pprinter : génération de code HTML pour les schémas input/print, sinon JS standard
+
+    Typing : correction des vérifications de types, blocs, returns, whiles, conds...
+
+    Interf : suppression des affichages supplémentaires afin de pouvoir enregistrer directement le résultat au format .html
