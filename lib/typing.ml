@@ -31,6 +31,43 @@ let tp_const = function
     | NoneV -> UnionT[NoneT]
     | StringV _ -> UnionT[StringT]
 
+
+  (*ajoute trie et supprime les doublons*)  
+let tp_union (UnionT a) (UnionT b) = 
+  let c = a @ b in
+  let c_trier = List.sort compare c in
+  let rec sans_doublons = function
+    | [] -> []
+    | [x] -> [x]
+    | x :: y :: reste ->
+        if x = y then sans_doublons (y :: reste)
+        else x :: sans_doublons (y :: reste)
+  in
+  match sans_doublons c_trier with
+  | [] -> failwith "erreur"
+  | c2 -> UnionT c2
+
+let tp_merge_dyn env env1 env2 =
+  let rec merge a b =
+    match a with
+    | [] -> []
+    | (v, t1) :: reste ->
+        let t2 =
+          try List.assoc v b
+          with Not_found -> t1
+        in
+        (v, tp_union t1 t2) :: merge reste b
+  in
+  let new_dyn_vars = {(*fusionne env1 et env2, union des types*)
+    globals = merge env1.dyn_vars.globals env2.dyn_vars.globals;
+    locals  = merge env1.dyn_vars.locals  env2.dyn_vars.locals;
+  } in
+  {
+    fdecls = env.fdecls;
+    static_vars = env.static_vars;
+    dyn_vars = new_dyn_vars;
+    curfun = env.curfun;
+  }    
 let tp_var (env : var_environment )(v :string) =
   try List.assoc v env.locals
   with Not_found ->
@@ -38,6 +75,10 @@ let tp_var (env : var_environment )(v :string) =
     with Not_found ->
       failwith ("la variable n'est pas déclarée : " ^ v)
 (*dune exec PythonToJS f test/test.py*)
+ 
+
+(*effectue les vérifications de type*)
+
 let rec tp_expr (env : environment) (e : expr) : tp = 
   match e with
     | Const c -> tp_const (c)
@@ -69,22 +110,7 @@ and tp_Operation (env : environment) (e1, op, e2) =
             | (UnionT[FloatT], UnionT[IntT]) -> UnionT[BoolT]
             | _ -> failwith "Type error: incompatible types for comparison operator"
           )
-<<<<<<< HEAD
-    )
-=======
-    )  
-  
-
-(*dune exec PythonToJS f test/test.py*)
-(*effectue les vérifications de type*)
-let rec tp_expr (env : environment) (e : expr) : tp = 
-  match e with
-    | Const c -> tp_const (c)
-    | VarE v ->  tp_var (env.dyn_vars)(v)
-    | BinOp (op, e1, e2) -> tp_Operation (env.dyn_vars)(e1, op, e2)
-    | CallE (f_name, arguments) -> tp_CallE env f_name arguments
->>>>>>> 08b41b5 (readMe Alexis)
-
+        )
 
 and tp_CallE (env : environment) f_name arguments =
   let arguments_types = List.map (tp_expr env) arguments in
@@ -117,44 +143,6 @@ and tp_CallE (env : environment) f_name arguments =
     else failwith ("nombre incorrect d'arguments pour la fonction " ^ f_name)
   with Not_found ->
     failwith ("Fonction non déclarée: " ^ f_name))
-
-
-  (*ajoute trie et supprime les doublons*)  
-  let tp_union (UnionT a) (UnionT b) = 
-    let c = a @ b in
-    let c_trier = List.sort compare c in
-    let rec sans_doublons = function
-      | [] -> []
-      | [x] -> [x]
-      | x :: y :: reste ->
-          if x = y then sans_doublons (y :: reste)
-          else x :: sans_doublons (y :: reste)
-    in
-    match sans_doublons c_trier with
-    | [] -> failwith "erreur"
-    | c2 -> UnionT c2
-
-  let tp_merge_dyn env env1 env2 =
-    let rec merge a b =
-      match a with
-      | [] -> []
-      | (v, t1) :: reste ->
-          let t2 =
-            try List.assoc v b
-            with Not_found -> t1
-          in
-          (v, tp_union t1 t2) :: merge reste b
-    in
-    let new_dyn_vars = {(*fusionne env1 et env2, union des types*)
-      globals = merge env1.dyn_vars.globals env2.dyn_vars.globals;
-      locals  = merge env1.dyn_vars.locals  env2.dyn_vars.locals;
-    } in
-    {
-      fdecls = env.fdecls;
-      static_vars = env.static_vars;
-      dyn_vars = new_dyn_vars;
-      curfun = env.curfun;
-    }
 
 let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s = 
   match s with
