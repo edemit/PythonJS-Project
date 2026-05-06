@@ -1,21 +1,29 @@
+Typage (dans le fichiier typing)
+    La fonction tp_exprr permet de déterminer le type d’une expression:
 
-pour le typage (Typing) notre code se structure de cette manière 
-tp_stmt vérifie : 
-    - les assignations qui est effectué de la manière suivante, dans tp_expr il y a 4 possibilitées:
+        -Constante : renvoie le type directement
 
-        - l'expression est une constante, on renvoie donc juste son type 
-        - l'expression est une variable, on vérifie donc qu'elle est deja déclaré dans l'environnement 
-        - l'expression est une opération, on vérifie que l'opération est entre deux types qui font sens,
-            par exemple une opération aritmétique ne se fait pas entre des booléens ou une comparaison entre un string et un int
-        - pour finir si l'expression est une fonction, on vérifie que ses paramètres de la fonctions sont bon en quantité et typages ou si la fonction existe dans l'environnement
+        -Variable : on vérifie que la variable est déclarée dans l’environnement, puis on récupère son type
 
-    - les Blocks qui lis les statements a la suite en mettant a jour l'environnement
-    - les Returns qui renvoie le type du retour 
-    - les Whiles qui verifie le type des variables dans la boucle
-    - les Conds on verif que on a une condition booléenne puis on fusionne les types de retour
+        -Opération binaire : on vérifie que les types des deux opérandes sont compatibles
+
+        -Appel de fonction CallE : on vérifie que la fonction existe, que le nombre d’arguments est correct, et que les types sont compatibles avec les paramètres
+
+    Vérification des instructions (fonction tp_stmt):
+
+        -Assignation : on calcule le type de l’expression dans Tp_expr et on met à jour l’environnement avec ce type
+
+        -Block : les instructions sont traitées a la suite en propageant les types dans l’environnement
+
+        -Return : on calcule le type de l’expression retournée et on l’accumule avec les autres types de retour possibles
+
+        -Condition : on vérifie que la condition est de type booléen, puis on analyse les deux branches et on fusionne leurs environnements et types de retour
+
+        -Boucle While : on applique un calcul de point fixe pour déterminer un environnement stable après la boucle
+
+        -Appel de fonction (`CallS`) : guère les instructions.
 
 
-et l'environnement est mit a jour à chaque assignation, 
 
 Etape 3:
     Parser : ajout de fonctions avec les types : return type, union types, appels dans les expressions, != et variables locales
@@ -28,12 +36,18 @@ Etape 3:
 
 
 Note d'Alexis, concernant la partie typing :
-    j'ai eu des problèmes sur comment réutiliser tp_expr dans tp_callE, 
-    j'ai pu m'aider de copilot pour apprendre l'existance de "List.assoc","and" et aussi le "try" que j'utilise pour callE a la fin de tp_expr
-    j'ai reçu aussi de l'aide pour la fonction tp_stmt du groupe Chris/Angel qui ont mieux compris le sujet que moi notamment sur le fixpoint du While que je n'arrivais pas realiser et sur le Block 
 
-    Egalement, je n'ai pas eu le temps de faire tp_fundefn 
+    Difficultés rencontrées
+        -Compréhension de l'arborescence de classe et de son usage au debut du projet.
+        -La fonction tp_fundefn n’a pas été implémentée faute de temps.
+        -Implémentation de toute les parties de tp_stmt, en particulier (aide du groupe angel/chris ):
+            -le calcul de point fixe pour les boucles while
+            -la gestion des blocs
 
+    Usage de copilote 
+        -aide dans la fonction callE pour créer une mutuellement récursives avec `and`
+        -decouverte de raccourci pour raccourcir mon code comme `List.assoc` et `try with`.
+        
 Note de Florian, concernant le partie parser : 
     J'ai perdu du temps au début parce que j'avais tenté de créer des statements non demandés (comme par exemple le statement elif), et j'ai compris plus tard que ceux-ci n'étaient pas demandées, je les ai donc supprimés
     J'ai du m'aider de ChatGPT pour réussir à correctement traduire la grammaire Python en Ocaml pour les statements function_body et function_def
