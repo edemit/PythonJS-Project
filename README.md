@@ -52,3 +52,6 @@ Note de Florian, concernant le partie parser :
     J'ai perdu du temps au début parce que j'avais tenté de créer des statements non demandés (comme par exemple le statement elif), et j'ai compris plus tard que ceux-ci n'étaient pas demandées, je les ai donc supprimés
     J'ai du m'aider de ChatGPT pour réussir à correctement traduire la grammaire Python en Ocaml pour les statements function_body et function_def
     J'ai également recu l'aide de Chris, du groupe Chris/Angel, qui m'a aidé à comprendre comment intégrer les expressions
+
+Note d'Illia, concernant la traduction en JS/HTML :
+    Le travail s'est déroulé sans difficultés particulières ; le plus gros du travail consistait à travailler avec ocaml et à comprendre comment les différents composants du programme fonctionnaient les uns avec les autres. Avec l'aide d'IA, j'ai pu parfois "déchiffrer" le sens de chaque fichier ou fonction pour ne pas se perdre.
