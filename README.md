@@ -17,14 +17,6 @@ tp_stmt vérifie :
 
 et l'environnement est mit a jour à chaque assignation, 
 
-
-    difficulté de cette partie 
-        j'ai eu des problèmes sur comment réutiliser tp_expr dans tp_callE, 
-        j'ai pu m'aider de copilot pour apprendre l'existance de "List.assoc","and" et aussi le "try" que j'utilise pour callE a la fin de tp_expr
-        j'ai reçu aussi de l'aide pour la fonction tp_stmt du groupe chris/angel qui ont mieux compris le sujet que moi notamment sur le fixpoint du While que je n'arrivais pas realiser et sur le Block 
-
-        je n'ai pas eu le temps de faire tp_fundefn 
-
 Etape 3:
     Parser : ajout de fonctions avec les types : return type, union types, appels dans les expressions, != et variables locales
 
@@ -33,3 +25,16 @@ Etape 3:
     Typing : correction des vérifications de types, blocs, returns, whiles, conds...
 
     Interf : suppression des affichages supplémentaires afin de pouvoir enregistrer directement le résultat au format .html
+
+
+Note d'Alexis, concernant la partie typing :
+    j'ai eu des problèmes sur comment réutiliser tp_expr dans tp_callE, 
+    j'ai pu m'aider de copilot pour apprendre l'existance de "List.assoc","and" et aussi le "try" que j'utilise pour callE a la fin de tp_expr
+    j'ai reçu aussi de l'aide pour la fonction tp_stmt du groupe Chris/Angel qui ont mieux compris le sujet que moi notamment sur le fixpoint du While que je n'arrivais pas realiser et sur le Block 
+
+    Egalement, je n'ai pas eu le temps de faire tp_fundefn 
+
+Note de Florian, concernant le partie parser : 
+    J'ai perdu du temps au début parce que j'avais tenté de créer des statements non demandés (comme par exemple le statement elif), et j'ai compris plus tard que ceux-ci n'étaient pas demandées, je les ai donc supprimés
+    J'ai du m'aider de ChatGPT pour réussir à correctement traduire la grammaire Python en Ocaml pour les statements function_body et function_def
+    J'ai également recu l'aide de Chris, du groupe Chris/Angel, qui m'a aidé à comprendre comment intégrer les expressions
