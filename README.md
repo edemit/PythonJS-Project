@@ -40,7 +40,7 @@ Note d'Alexis, concernant la partie typing :
     Difficultés rencontrées
         -Compréhension de l'arborescence de classe et de son usage au debut du projet.
         -La fonction tp_fundefn n’a pas été implémentée faute de temps.
-        -Implémentation de toute les parties de tp_stmt, en particulier (aide du groupe angel/chris ):
+        -Implémentation de while et block(aide du groupe angel/chris ):
             -le calcul de point fixe pour les boucles while
             -la gestion des blocs
 
