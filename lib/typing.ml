@@ -176,7 +176,7 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
         (new_env, tp_union tp1 tp2, b1 && b2)
 
     | While (e, stm) ->
-        let a = tp_expr env e in
+        let _a = tp_expr env e in
         let rec fixpoint env_cur =
           let (env_after, _, _) = tp_stmt (env_cur, t, false) stm in
           let new_env = tp_merge_dyn env env_cur env_after in
@@ -192,12 +192,9 @@ let rec tp_stmt ((env, t, returned) : (environment * tp * bool)) s =
 
     | CallS (f_name, arguments) ->
         let _ = tp_CallE env f_name arguments in
-        (env, t, returned)    
+        (env, t, returned)
 
-    |_ -> failwith "erreur"
-;;
-
-let tp_fundefn init_env (Fundefn(Fundecl(fn, pards, rt), vds, s)) = true
+let tp_fundefn _init_env (Fundefn(Fundecl(_fn, _pards, _rt), _vds, _s)) = true
 
   (* Function declarations of library / predefined functions *)
 let library_fds = [
